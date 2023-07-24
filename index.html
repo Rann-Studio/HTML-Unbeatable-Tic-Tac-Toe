@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= error.status %>
+            <%= error.message %>
+    </title>
+    <style>
+        /* @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@0,500;1,400&display=swap'); */
+
+        * {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .content-center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background-color: white;
+            width: 506px;
+            padding: 50px 0 80px;
+            margin: 25px auto;
+            box-shadow: 2px 2px 2px 2px #cfd4e6;
+        }
+
+        body {
+            background-color: #e1e5f2;
+            color: rgb(104, 102, 102);
+        }
+
+        .header {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .board {
+            width: 306px;
+            height: 306px;
+            margin: 20px auto;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .square {
+            width: 98px;
+            height: 98px;
+            background-color: #778da9;
+            border-radius: 10px;
+            margin: 2px;
+        }
+
+        /* Apply the hover effect only on desktop devices (screens wider than 768px) */
+        @media screen and (min-width: 769px) {
+            .square:not(.computer):hover {
+                cursor: pointer;
+                background-image: url('images/tictactoe-mark-x.png');
+                background-repeat: no-repeat;
+                background-position: center;
+                background-size: 50%;
+            }
+        }
+
+
+        button {
+            border-radius: 10px;
+            padding: 10px;
+            border: none;
+        }
+
+        button:hover {
+            background-color: #d1d9e2;
+            cursor: pointer;
+            box-shadow: none;
+        }
+
+        .player {
+            background-image: url('images/tictactoe-mark-x.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 50%;
+        }
+
+        .computer {
+            background-image: url('images/tictactoe-mark-o.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 50%;
+        }
+
+        .player:hover {
+            cursor: initial;
+        }
+
+        .computer:hover {
+            cursor: initial;
+        }
+
+        .message {
+            text-align: center;
+        }
+
+        .reset-button {
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="content-center">
+        <div class="card">
+            <div class="header">
+                <h2>Tic Tac Toe</h2>
+            </div>
+            <div class="board"></div>
+            <div class="message">Your turn</div>
+            <div class="game-over"></div>
+            <div class="reset-button">
+                <button type="reset" id="reset">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            for (let i = 0; i < 9; i++) {
+                const square = document.createElement('div');
+                square.classList.add('square');
+                square.dataset.squareId = i;
+                document.querySelector('.board').appendChild(square);
+            }
+
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5],
+                [6, 7, 8], [0, 3, 6],
+                [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6],
+            ];
+            const board = document.querySelector('.board');
+            const squares = Array.from(board.children);
+            const message = document.querySelector('.message');
+            const resetButton = document.getElementById('reset');
+            let gameOver = false;
+
+            let currentPlayer = 'player'; // 'player' or 'computer'
+
+            if (currentPlayer == 'computer') {
+                message.textContent = "Computer's turn";
+                setTimeout(handleComputerMove, 1000);
+            }
+
+            // Function to check if a player has won
+            function checkWin(player) {
+                return winPatterns.some(pattern =>
+                    pattern.every(index => squares[index].classList.contains(player))
+                );
+            }
+
+            // Function to check if the board is full
+            function checkDraw() {
+                return squares.every(square => square.classList.contains('player') || square.classList.contains('computer'));
+            }
+
+            // Function to handle player's move
+            function handlePlayerMove(square) {
+                if (!gameOver) {
+                    if (currentPlayer === 'player' && !square.classList.contains('player') && !square.classList.contains('computer')) {
+                        square.classList.add(currentPlayer);
+                        if (checkWin(currentPlayer)) {
+                            message.textContent = `${currentPlayer === 'player' ? 'You' : 'Computer'} win!`;
+                            gameOver = true;
+                        } else if (checkDraw()) {
+                            message.textContent = "It's a draw!";
+                            gameOver = true;
+                        } else {
+                            currentPlayer = 'computer';
+                            message.textContent = "Computer's turn";
+                            setTimeout(handleComputerMove, 1000);
+                        }
+                    }
+                }
+            }
+
+            // Function to handle computer's move using the Minimax algorithm
+            function handleComputerMove() {
+                if (!gameOver) {
+                    let bestScore = -Infinity;
+                    let bestMove;
+                    for (let i = 0; i < squares.length; i++) {
+                        if (currentPlayer === 'computer' && !squares[i].classList.contains('player') && !squares[i].classList.contains('computer')) {
+                            squares[i].classList.add('computer');
+                            let score = minimax(squares, 0, false);
+                            squares[i].classList.remove('computer');
+                            if (score > bestScore) {
+                                bestScore = score;
+                                bestMove = i;
+                            }
+                        }
+                    }
+                    squares[bestMove].classList.add('computer');
+                    currentPlayer = 'player';
+                    if (checkWin('computer')) {
+                        message.textContent = "Computer wins!";
+                        gameOver = true;
+                    } else if (checkDraw()) {
+                        message.textContent = "It's a draw!";
+                        gameOver = true;
+                    } else {
+                        message.textContent = "Your turn";
+                    }
+                }
+            }
+
+            // The Minimax algorithm
+            function minimax(board, depth, isMaximizing) {
+                if (checkWin('player')) {
+                    return -10 + depth;
+                }
+                if (checkWin('computer')) {
+                    return 10 - depth;
+                }
+                if (checkDraw()) {
+                    return 0;
+                }
+
+                if (isMaximizing) {
+                    let bestScore = -Infinity;
+                    for (let i = 0; i < board.length; i++) {
+                        if (!board[i].classList.contains('player') && !board[i].classList.contains('computer')) {
+                            board[i].classList.add('computer');
+                            let score = minimax(board, depth + 1, false);
+                            board[i].classList.remove('computer');
+                            bestScore = Math.max(bestScore, score);
+                        }
+                    }
+                    return bestScore;
+                } else {
+                    let bestScore = Infinity;
+                    for (let i = 0; i < board.length; i++) {
+                        if (!board[i].classList.contains('player') && !board[i].classList.contains('computer')) {
+                            board[i].classList.add('player');
+                            let score = minimax(board, depth + 1, true);
+                            board[i].classList.remove('player');
+                            bestScore = Math.min(bestScore, score);
+                        }
+                    }
+                    return bestScore;
+                }
+            }
+
+            // Add click event listener to each square
+            squares.forEach(square => {
+                square.addEventListener('click', () => {
+                    if (currentPlayer === 'player') {
+                        handlePlayerMove(square);
+                    }
+                });
+            });
+
+            // Reset the game when the "Reset" button is clicked
+            resetButton.addEventListener('click', () => {
+                squares.forEach(square => {
+                    square.classList.remove('player', 'computer');
+                });
+                currentPlayer = 'player';
+                message.textContent = "Your turn";
+                gameOver = false;
+            });
+        });
+    </script>
+</body>
+</html>
